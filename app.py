@@ -12,8 +12,11 @@ def scramble_name(length=8):
     return ''.join(random.choice(letters) for _ in range(length))
 
 def scramble_code(code):
-    """Scramble variable and function names in the code."""
+    """Scramble variable and non-default function names in the code."""
     tree = ast.parse(code)
+
+    # List of default Python function names that should be excluded from scrambling
+    default_functions = ['print', 'input']
 
     class NameScrambler(ast.NodeTransformer):
         def __init__(self):
@@ -39,21 +42,12 @@ def scramble_code(code):
                 if node.id in self.name_map:
                     return ast.copy_location(ast.Name(id=self.name_map[node.id], ctx=node.ctx), node)
 
-                scrambled_name = self.scramble_name(node.id)
-                self.name_map[node.id] = scrambled_name
-                return ast.copy_location(ast.Name(id=scrambled_name, ctx=node.ctx), node)
+                if node.id not in default_functions:
+                    scrambled_name = self.scramble_name(node.id)
+                    self.name_map[node.id] = scrambled_name
+                    return ast.copy_location(ast.Name(id=scrambled_name, ctx=node.ctx), node)
 
             return node
-
-        def visit_Call(self, node):
-            if isinstance(node.func, ast.Name):
-                if node.func.id in self.name_map:
-                    node.func.id = self.name_map[node.func.id]
-                else:
-                    scrambled_name = self.scramble_name(node.func.id)
-                    self.name_map[node.func.id] = scrambled_name
-                    node.func.id = scrambled_name
-            return self.generic_visit(node)
 
     scrambled_tree = NameScrambler().visit(tree)
     scrambled_code = astor.to_source(scrambled_tree)
