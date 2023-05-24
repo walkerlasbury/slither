@@ -38,8 +38,9 @@ def scramble_code(code):
             return self.generic_visit(node)
 
         def visit_Name(self, node):
-            if isinstance(node.ctx, ast.Store):
-                node.id = self.scramble_name(node.id)
+            if isinstance(node.ctx, ast.Load):
+                if node.id in self.name_map:
+                    node.id = self.name_map[node.id]
             return self.generic_visit(node)
 
     scrambled_tree = NameScrambler().visit(tree)
