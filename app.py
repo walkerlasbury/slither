@@ -2,6 +2,7 @@ from flask import Flask, render_template, request
 import ast
 import random
 import string
+import astor
 
 app = Flask(__name__)
 
@@ -25,7 +26,7 @@ def scramble_code(code):
             return self.generic_visit(node)
 
     scrambled_tree = NameScrambler().visit(tree)
-    scrambled_code = ast.unparse(scrambled_tree)
+    scrambled_code = astor.to_source(scrambled_tree)
     return scrambled_code
 
 @app.route('/', methods=['GET', 'POST'])
