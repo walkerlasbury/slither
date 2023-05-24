@@ -12,11 +12,8 @@ def scramble_name(length=8):
     return ''.join(random.choice(letters) for _ in range(length))
 
 def scramble_code(code):
-    """Scramble variable and non-default function names in the code."""
+    """Scramble variable names in the code while preserving function names."""
     tree = ast.parse(code)
-
-    # List of default Python function names that should be excluded from scrambling
-    default_functions = ['print', 'input']
 
     class NameScrambler(ast.NodeTransformer):
         def __init__(self):
@@ -39,13 +36,36 @@ def scramble_code(code):
                 if hasattr(node, 'parent') and isinstance(node.parent, ast.Attribute) and node.parent.attr == node.id:
                     return node
 
+                if isinstance(node.parent, ast.FunctionDef):
+                    return node  # Skip scrambling function names
+
+                if isinstance(node.parent, ast.Call) and isinstance(node.parent.func, ast.Name) and node.parent.func.id == node.id:
+                    return node  # Skip scrambling function names used as arguments
+
+                if isinstance(node.parent, ast.Attribute) and node.parent.attr == node.id:
+                    return node
+
+                if isinstance(node.parent, ast.Assign) and isinstance(node.parent.targets[0], ast.Name) and node.parent.targets[0].id == node.id:
+                    return node
+
+                if isinstance(node.parent, ast.ExceptHandler) and isinstance(node.parent.name, ast.Name) and node.parent.name.id == node.id:
+                    return node
+
+                if isinstance(node.parent, ast.withitem) and isinstance(node.parent.optional_vars, ast.Name) and node.parent.optional_vars.id == node.id:
+                    return node
+
+                if isinstance(node.parent, ast.AnnAssign) and isinstance(node.parent.target, ast.Name) and node.parent.target.id == node.id:
+                    return node
+
+                if isinstance(node.parent, ast.arguments) and node.parent.vararg and node.parent.vararg.arg == node.id:
+                    return node
+
                 if node.id in self.name_map:
                     return ast.copy_location(ast.Name(id=self.name_map[node.id], ctx=node.ctx), node)
 
-                if node.id not in default_functions:
-                    scrambled_name = self.scramble_name(node.id)
-                    self.name_map[node.id] = scrambled_name
-                    return ast.copy_location(ast.Name(id=scrambled_name, ctx=node.ctx), node)
+                scrambled_name = self.scramble_name(node.id)
+                self.name_map[node.id] = scrambled_name
+                return ast.copy_location(ast.Name(id=scrambled_name, ctx=node.ctx), node)
 
             return node
 
