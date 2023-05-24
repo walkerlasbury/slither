@@ -16,13 +16,30 @@ def scramble_code(code):
     tree = ast.parse(code)
 
     class NameScrambler(ast.NodeTransformer):
+        def __init__(self):
+            self.name_map = {}
+
+        def scramble_name(self, original_name):
+            """Scramble the original name or return the already scrambled name if available."""
+            if original_name in self.name_map:
+                return self.name_map[original_name]
+            else:
+                scrambled_name = scramble_name()
+                self.name_map[original_name] = scrambled_name
+                return scrambled_name
+
         def visit_FunctionDef(self, node):
-            node.name = scramble_name()
+            node.name = self.scramble_name(node.name)
+
+            # Scramble parameter names
+            for arg in node.args.args:
+                arg.arg = self.scramble_name(arg.arg)
+
             return self.generic_visit(node)
 
         def visit_Name(self, node):
             if isinstance(node.ctx, ast.Store):
-                node.id = scramble_name()
+                node.id = self.scramble_name(node.id)
             return self.generic_visit(node)
 
     scrambled_tree = NameScrambler().visit(tree)
