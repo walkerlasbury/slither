@@ -12,7 +12,7 @@ def scramble_name(length=8):
     return ''.join(random.choice(letters) for _ in range(length))
 
 def scramble_code(code):
-    """Scramble variable names in the code."""
+    """Scramble variable and function names in the code."""
     tree = ast.parse(code)
 
     class NameScrambler(ast.NodeTransformer):
@@ -44,6 +44,11 @@ def scramble_code(code):
                 return ast.copy_location(ast.Name(id=scrambled_name, ctx=node.ctx), node)
 
             return node
+
+        def visit_Call(self, node):
+            if isinstance(node.func, ast.Name):
+                node.func.id = self.scramble_name(node.func.id)
+            return self.generic_visit(node)
 
     scrambled_tree = NameScrambler().visit(tree)
     scrambled_code = astor.to_source(scrambled_tree)
