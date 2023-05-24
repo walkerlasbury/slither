@@ -33,7 +33,7 @@ def scramble_code(code):
                 return node
 
             if isinstance(node.ctx, ast.Load):
-                if isinstance(node.parent, ast.Attribute) and node.parent.attr == node.id:
+                if hasattr(node, 'parent') and isinstance(node.parent, ast.Attribute) and node.parent.attr == node.id:
                     return node
 
                 if node.id in self.name_map:
